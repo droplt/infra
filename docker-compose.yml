@@ -38,6 +38,8 @@ services:
       - ${BASE_PATH}/transmission-downloads/complete:/watch
       # where filebot AMC output organized files
       - ${BASE_PATH}/filebot-output:/output
+    ports:
+      - 5800:5800
     env_file:
       - .env
   jackett:
