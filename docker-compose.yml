@@ -1,0 +1,67 @@
+version: "3.7"
+
+services:
+  transmission:
+    image: linuxserver/transmission:latest
+    volumes:
+      # where transmission stores torrents downloads
+      - ${BASE_PATH}/transmission-downloads:/downloads
+      # where transmission stores its configuration, logs files
+      - ${BASE_PATH}/transmission-config:/config
+      # where transmission listen for .torrent files to add
+      - ${BASE_PATH}/transmission-watch:/watch
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+    env_file:
+      - .env
+  h5ai:
+    image: corfr/h5ai
+    volumes:
+      # where h5ai find files to be served
+      - ${BASE_PATH}/transmission-downloads/complete:/var/www
+      # where h5ai find nginx configuration
+      - ./h5ai.conf:/etc/nginx/sites-enabled/h5.conf
+    ports:
+      - 80:80
+    env_file:
+      - .env
+  filebot:
+    image: jlesage/filebot
+    volumes:
+      # where filebot find files that must be accessible by the application
+      - ${BASE_PATH}:/storage
+      # where filebot stores its configuration, logs files
+      - ${BASE_PATH}/filebot-config:/config
+      # where filebot AMC (Automated Media Center) script find input files
+      - ${BASE_PATH}/transmission-downloads/complete:/watch
+      # where filebot AMC output organized files
+      - ${BASE_PATH}/filebot-output:/output
+    env_file:
+      - .env
+  jackett:
+    image: linuxserver/jackett
+    volumes:
+      # where jackett stores its configuration, logs files
+      - ${BASE_PATH}/jackett-config:/config
+      # where jackett download .torrent files
+      - ${BASE_PATH}/transmission-watch:/downloads
+    ports:
+      - 9117:9117
+    env_file:
+      - .env
+  plex:
+    image: plexinc/pms-docker
+    network_mode: host
+    volumes:
+      # where plex stores configuration data
+      - ${BASE_PATH}/plex-config:/config
+      # where plex stores transcoder temp files
+      - ${BASE_PATH}/plex-transcode:/transcode
+      # where plex find medias (output from filebot)
+      - ${BASE_PATH}/filebot-output:/data
+      # where plex find real medias (needed due to symlinks)
+      - ${BASE_PATH}/transmission-downloads/complete:/watch
+    env_file:
+      - .env
